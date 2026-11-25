@@ -15,11 +15,13 @@ final class TaskViewModel {
         description: String,
         dueDate: Date,
         category: TaskCategory,
-        priority: TaskPriority
+        priority: TaskPriority,
+        reminderDate: Date? = nil
     ) throws -> TaskItem {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { throw TaskValidationError.emptyTitle }
         try validateDueDate(dueDate)
+        try validateReminderDate(reminderDate)
         let existingTasks = try context.fetch(FetchDescriptor<TaskItem>())
         guard !existingTasks.contains(where: { $0.title.localizedCaseInsensitiveCompare(cleanTitle) == .orderedSame }) else {
             throw TaskValidationError.duplicateTitle
@@ -30,7 +32,8 @@ final class TaskViewModel {
             taskDescription: description.trimmingCharacters(in: .whitespacesAndNewlines),
             dueDate: dueDate,
             category: category,
-            priority: priority
+            priority: priority,
+            reminderDate: reminderDate
         )
         context.insert(task)
         do {
@@ -48,11 +51,13 @@ final class TaskViewModel {
         description: String,
         dueDate: Date,
         category: TaskCategory,
-        priority: TaskPriority
+        priority: TaskPriority,
+        reminderDate: Date? = nil
     ) throws {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { throw TaskValidationError.emptyTitle }
         try validateDueDate(dueDate)
+        try validateReminderDate(reminderDate)
         guard let storedTask = try storedTask(withID: task.id) else { throw TaskOperationError.taskNotFound }
         let existingTasks = try context.fetch(FetchDescriptor<TaskItem>())
         guard !existingTasks.contains(where: {
@@ -61,12 +66,13 @@ final class TaskViewModel {
             throw TaskValidationError.duplicateTitle
         }
 
-        let oldValues = (storedTask.title, storedTask.taskDescription, storedTask.dueDate, storedTask.category, storedTask.priority)
+        let oldValues = (storedTask.title, storedTask.taskDescription, storedTask.dueDate, storedTask.category, storedTask.priority, storedTask.reminderDate)
         storedTask.title = cleanTitle
         storedTask.taskDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         storedTask.dueDate = dueDate
         storedTask.category = category
         storedTask.priority = priority
+        storedTask.reminderDate = reminderDate
         do {
             try context.save()
         } catch {
@@ -75,6 +81,7 @@ final class TaskViewModel {
             storedTask.dueDate = oldValues.2
             storedTask.category = oldValues.3
             storedTask.priority = oldValues.4
+            storedTask.reminderDate = oldValues.5
             throw error
         }
     }
@@ -141,6 +148,13 @@ final class TaskViewModel {
     private func validateDueDate(_ dueDate: Date) throws {
         guard dueDate.timeIntervalSince1970.isFinite else { throw TaskValidationError.invalidDueDate }
     }
+
+    private func validateReminderDate(_ reminderDate: Date?) throws {
+        guard let reminderDate else { return }
+        guard TaskReminderDateValidator.isFuture(reminderDate) else {
+            throw TaskValidationError.invalidReminderDate
+        }
+    }
 }
 
 enum TaskListStatus: String, CaseIterable, Identifiable {
@@ -169,12 +183,14 @@ enum TaskValidationError: LocalizedError, Equatable {
     case emptyTitle
     case duplicateTitle
     case invalidDueDate
+    case invalidReminderDate
 
     var errorDescription: String? {
         switch self {
         case .emptyTitle: "Add a title before saving this task."
         case .duplicateTitle: "A task with this title already exists. Choose a different title."
         case .invalidDueDate: "Choose a valid due date before saving this task."
+        case .invalidReminderDate: "Choose a reminder time in the future."
         }
     }
 }

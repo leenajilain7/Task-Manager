@@ -3,6 +3,7 @@ import SwiftData
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(NotificationService.self) private var notificationService
     @Query(sort: \TaskItem.dueDate) private var tasks: [TaskItem]
     @State private var searchText = ""
     @State private var statusFilter: TaskStatusFilter = .all
@@ -181,7 +182,10 @@ struct DashboardView: View {
                 VStack(spacing: 0) {
                     ForEach(Array(visibleTasks.enumerated()), id: \.element.id) { index, task in
                         TaskRow(task: task) {
-                            do { try TaskViewModel(context: modelContext).toggleCompletion(for: task) }
+                            do {
+                                try TaskViewModel(context: modelContext).toggleCompletion(for: task)
+                                Task { await TaskReminderCoordinator(service: notificationService).completionDidChange(for: task) }
+                            }
                             catch { errorMessage = error.localizedDescription }
                         }
                         if index < visibleTasks.count - 1 { Divider().padding(.leading, 54) }

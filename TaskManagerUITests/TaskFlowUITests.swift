@@ -92,4 +92,42 @@ final class TaskFlowUITests: XCTestCase {
         confirmDelete.tap()
         XCTAssertFalse(app.buttons["task.row.\(title)"].waitForExistence(timeout: 2))
     }
+
+    func testReminderCanBeEnabledAndAppearsInTaskDetails() {
+        let app = launchApp()
+        let title = "UI Reminder Sample"
+        app.buttons["Add task"].tap()
+        let titleField = app.textFields["task.title"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 5))
+        titleField.tap()
+        titleField.typeText(title)
+
+        let reminderToggle = app.switches["task.reminderEnabled"].switches.firstMatch
+        XCTAssertTrue(reminderToggle.waitForExistence(timeout: 5))
+        reminderToggle.tap()
+        let clearReminder = app.buttons["task.clearReminder"]
+        XCTAssertTrue(clearReminder.waitForExistence(timeout: 5), app.debugDescription)
+        app.buttons["task.save"].tap()
+
+        app.tabBars.buttons["Tasks"].tap()
+        let taskRow = app.buttons["task.row.\(title)"]
+        XCTAssertTrue(taskRow.waitForExistence(timeout: 5))
+        taskRow.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["task.reminderDetails"].waitForExistence(timeout: 5))
+    }
+
+    func testSettingsExplainsNotificationPermissionBeforeRequest() {
+        let app = launchApp()
+        app.tabBars.buttons["Settings"].tap()
+
+        let explanation = app.staticTexts["TaskFlow uses notifications to alert you at the reminder time you choose."]
+        XCTAssertTrue(explanation.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Permission status"].exists || app.otherElements["settings.notificationStatus"].exists)
+        XCTAssertTrue(
+            app.buttons["settings.requestNotifications"].exists ||
+            app.buttons["settings.openNotificationSettings"].exists ||
+            app.staticTexts["Task reminders can be delivered."].exists ||
+            app.staticTexts["Notification access is restricted by this device’s settings."].exists
+        )
+    }
 }

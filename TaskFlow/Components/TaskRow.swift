@@ -39,12 +39,17 @@ struct TaskRow: View {
                         }
                     }
                     .foregroundStyle(.secondary)
+                    if let reminderDate = task.reminderDate {
+                        Label(reminderDate.formatted(date: .omitted, time: .shortened), systemImage: "bell")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(TaskFlowStyle.accent)
+                            .accessibilityLabel("Reminder \(reminderDate.formatted(date: .complete, time: .shortened))")
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
             .accessibilityHint("Open task details")
-            .accessibilityIdentifier("task.row.\(task.title)")
             .accessibilityIdentifier("task.row.\(task.title)")
             Spacer(minLength: 4)
             Text(task.dueDate.formatted(.dateTime.hour().minute()))

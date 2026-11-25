@@ -30,6 +30,7 @@ final class TaskItem {
     var priorityValue: String
     var isComplete: Bool
     var completedAt: Date?
+    var reminderDate: Date?
     var createdAt: Date
 
     var category: TaskCategory {
@@ -50,6 +51,7 @@ final class TaskItem {
         priority: TaskPriority = .medium,
         isComplete: Bool = false,
         completedAt: Date? = nil,
+        reminderDate: Date? = nil,
         createdAt: Date = .now,
         id: UUID = UUID()
     ) {
@@ -61,6 +63,7 @@ final class TaskItem {
         self.priorityValue = priority.rawValue
         self.isComplete = isComplete
         self.completedAt = completedAt
+        self.reminderDate = reminderDate
         self.createdAt = createdAt
     }
 }

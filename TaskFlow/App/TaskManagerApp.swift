@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 @main
 struct TaskManagerApp: App {
     private let container: ModelContainer?
     private let startupError: String?
+    private let notificationService = NotificationService()
 
     init() {
         let isUITesting = ProcessInfo.processInfo.arguments.contains("-ui-testing")
@@ -24,6 +26,7 @@ struct TaskManagerApp: App {
                 if let container {
                     RootTabView()
                         .modelContainer(container)
+                        .environment(notificationService)
                         .task {
                             do {
                                 try LegacyTaskMigration.migrateIfNeeded(in: container.mainContext)

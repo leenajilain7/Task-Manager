@@ -3,6 +3,7 @@ import SwiftData
 
 struct AllTasksView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(NotificationService.self) private var notificationService
     @Query(sort: \TaskItem.dueDate) private var tasks: [TaskItem]
     @State private var searchText = ""
     @State private var status: TaskListStatus = .all
@@ -110,7 +111,10 @@ struct AllTasksView: View {
     }
 
     private func toggle(_ task: TaskItem) {
-        do { try viewModel.toggleCompletion(for: task) }
+        do {
+            try viewModel.toggleCompletion(for: task)
+            Task { await TaskReminderCoordinator(service: notificationService).completionDidChange(for: task) }
+        }
         catch { errorMessage = error.localizedDescription }
     }
 }

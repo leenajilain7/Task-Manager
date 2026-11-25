@@ -307,4 +307,184 @@ struct TaskPersistenceTests {
         #expect(fetched.first?.isComplete == false)
         #expect(fetched.first?.completedAt == nil)
     }
+
+    @Test func reminderDatePersistsWithTheTask() throws {
+        let store = try InMemoryTaskStore()
+        let reminder = Date.now.addingTimeInterval(3600)
+        let task = try TaskViewModel(context: store.context).createTask(
+            title: "Reminder persistence", description: "", dueDate: .now,
+            category: .personal, priority: .medium, reminderDate: reminder
+        )
+        let reader = ModelContext(store.container)
+        let saved = try reader.fetch(FetchDescriptor<TaskItem>())
+
+        #expect(saved.first?.id == task.id)
+        #expect(saved.first?.reminderDate == reminder)
+    }
+}
+
+@MainActor
+private final class MockTaskReminderService: TaskReminderScheduling {
+    struct ScheduledReminder: Equatable {
+        let title: String
+        let date: Date
+    }
+
+    var isReminderPreferenceEnabled = true
+    var status: TaskFlowNotificationAuthorization = .authorized
+    var scheduled: [UUID: ScheduledReminder] = [:]
+    var cancelledTaskIDs: [UUID] = []
+    var scheduleCallCount = 0
+    var cancelAllCallCount = 0
+
+    func currentAuthorizationStatus() async -> TaskFlowNotificationAuthorization { status }
+
+    func requestAuthorizationIfNeeded() async throws -> TaskFlowNotificationAuthorization {
+        if status == .notDetermined { status = .authorized }
+        return status
+    }
+
+    func scheduleReminder(taskID: UUID, title: String, date: Date) async {
+        scheduleCallCount += 1
+        scheduled[taskID] = ScheduledReminder(title: title, date: date)
+    }
+
+    func cancelReminder(taskID: UUID) async {
+        cancelledTaskIDs.append(taskID)
+        scheduled.removeValue(forKey: taskID)
+    }
+
+    func cancelAllTaskFlowReminders() async {
+        cancelAllCallCount += 1
+        scheduled.removeAll()
+    }
+}
+
+@MainActor
+@Suite("Task reminders")
+struct TaskReminderTests {
+    @Test func schedulesAnAuthorizedFutureReminder() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read", reminderDate: .now.addingTimeInterval(3600))
+
+        await TaskReminderCoordinator(service: service).synchronize(task)
+
+        #expect(service.scheduled[task.id]?.title == "Read")
+        #expect(service.scheduled[task.id]?.date == task.reminderDate)
+    }
+
+    @Test func cancelsWhenReminderIsCleared() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read")
+        service.scheduled[task.id] = .init(title: task.title, date: .now.addingTimeInterval(600))
+
+        await TaskReminderCoordinator(service: service).synchronize(task)
+
+        #expect(service.scheduled[task.id] == nil)
+        #expect(service.cancelledTaskIDs == [task.id])
+    }
+
+    @Test func rejectsPastReminderDates() throws {
+        let store = try InMemoryTaskStore()
+        let model = TaskViewModel(context: store.context)
+
+        #expect(throws: TaskValidationError.invalidReminderDate) {
+            try model.createTask(
+                title: "Past reminder", description: "", dueDate: .now,
+                category: .personal, priority: .medium,
+                reminderDate: .now.addingTimeInterval(-60)
+            )
+        }
+        #expect(throws: TaskValidationError.invalidReminderDate) {
+            try model.createTask(
+                title: "Invalid reminder", description: "", dueDate: .now,
+                category: .personal, priority: .medium,
+                reminderDate: Date(timeIntervalSince1970: .nan)
+            )
+        }
+    }
+
+    @Test func validatesTheMinuteUsedForNotificationDelivery() throws {
+        let calendar = utcCalendar()
+        let now = try isoDate("2026-11-25T14:30:30Z")
+        let reminderWithinTheCurrentMinute = try isoDate("2026-11-25T14:30:45Z")
+        let nextMinute = try isoDate("2026-11-25T14:31:00Z")
+
+        #expect(!TaskReminderDateValidator.isFuture(reminderWithinTheCurrentMinute, now: now, calendar: calendar))
+        #expect(TaskReminderDateValidator.isFuture(nextMinute, now: now, calendar: calendar))
+    }
+
+    @Test func updatingReminderReplacesTheExistingRequest() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read", reminderDate: .now.addingTimeInterval(3600))
+        let coordinator = TaskReminderCoordinator(service: service)
+        await coordinator.synchronize(task)
+        let updatedDate = Date.now.addingTimeInterval(7200)
+        task.reminderDate = updatedDate
+
+        await coordinator.synchronize(task)
+
+        #expect(service.scheduled.count == 1)
+        #expect(service.scheduled[task.id]?.date == updatedDate)
+        #expect(service.scheduleCallCount == 2)
+    }
+
+    @Test func repeatedSchedulingUsesOneTaskRequest() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read", reminderDate: .now.addingTimeInterval(3600))
+        let coordinator = TaskReminderCoordinator(service: service)
+
+        await coordinator.synchronize(task)
+        await coordinator.synchronize(task)
+
+        #expect(service.scheduled.count == 1)
+        #expect(service.scheduled[task.id] != nil)
+        #expect(NotificationService.notificationIdentifier(for: task.id) == "\(NotificationService.identifierPrefix)\(task.id.uuidString)")
+    }
+
+    @Test func completingTaskCancelsItsReminder() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read", isComplete: true, reminderDate: .now.addingTimeInterval(3600))
+        service.scheduled[task.id] = .init(title: task.title, date: task.reminderDate ?? .now)
+
+        await TaskReminderCoordinator(service: service).completionDidChange(for: task)
+
+        #expect(service.scheduled[task.id] == nil)
+        #expect(service.cancelledTaskIDs == [task.id])
+    }
+
+    @Test func deletingTaskCancelsItsReminder() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read", reminderDate: .now.addingTimeInterval(3600))
+        service.scheduled[task.id] = .init(title: task.title, date: task.reminderDate ?? .now)
+
+        await TaskReminderCoordinator(service: service).taskWasDeleted(task)
+
+        #expect(service.scheduled[task.id] == nil)
+        #expect(service.cancelledTaskIDs == [task.id])
+    }
+
+    @Test func deniedAndDisabledPreferencesDoNotScheduleReminders() async {
+        let service = MockTaskReminderService()
+        let task = TaskItem(title: "Read", reminderDate: .now.addingTimeInterval(3600))
+        let coordinator = TaskReminderCoordinator(service: service)
+
+        service.status = .denied
+        await coordinator.synchronize(task)
+        #expect(service.scheduled[task.id] == nil)
+
+        service.status = .authorized
+        service.isReminderPreferenceEnabled = false
+        await coordinator.synchronize(task)
+        #expect(service.scheduled[task.id] == nil)
+    }
+
+    @Test func authorizationStatusesIdentifySchedulingAvailability() {
+        #expect(!TaskFlowNotificationAuthorization.notDetermined.canSchedule)
+        #expect(TaskFlowNotificationAuthorization.authorized.canSchedule)
+        #expect(TaskFlowNotificationAuthorization.provisional.canSchedule)
+        #expect(TaskFlowNotificationAuthorization.ephemeral.canSchedule)
+        #expect(!TaskFlowNotificationAuthorization.denied.canSchedule)
+        #expect(!TaskFlowNotificationAuthorization.restricted.canSchedule)
+    }
 }

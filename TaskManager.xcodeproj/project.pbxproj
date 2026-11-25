@@ -18,9 +18,10 @@
 		B0000000000000000000002A = {isa = PBXBuildFile; fileRef = B0000000000000000000001D; };
 		B0000000000000000000002B = {isa = PBXBuildFile; fileRef = B0000000000000000000001E; };
 		B0000000000000000000002C = {isa = PBXBuildFile; fileRef = B0000000000000000000001F; };
+		B0000000000000000000002D = {isa = PBXBuildFile; fileRef = B00000000000000000000050; };
 		C10000000000000000000001 = {isa = PBXBuildFile; fileRef = C10000000000000000000003; };
 		C10000000000000000000002 = {isa = PBXBuildFile; fileRef = C10000000000000000000004; };
-		B00000000000000000000008 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B00000000000000000000001, B00000000000000000000002, B00000000000000000000003, B00000000000000000000004, B00000000000000000000005, B00000000000000000000006, B00000000000000000000007, B00000000000000000000026, B00000000000000000000027, B00000000000000000000028, B00000000000000000000029, B0000000000000000000002A, B0000000000000000000002B, B0000000000000000000002C,); runOnlyForDeploymentPostprocessing = 0; };
+		B00000000000000000000008 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B00000000000000000000001, B00000000000000000000002, B00000000000000000000003, B00000000000000000000004, B00000000000000000000005, B00000000000000000000006, B00000000000000000000007, B00000000000000000000026, B00000000000000000000027, B00000000000000000000028, B00000000000000000000029, B0000000000000000000002A, B0000000000000000000002B, B0000000000000000000002C, B0000000000000000000002D,); runOnlyForDeploymentPostprocessing = 0; };
 		B00000000000000000000009 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		B0000000000000000000000A = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		B00000000000000000000011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskManagerApp.swift; sourceTree = "<group>"; };
@@ -37,6 +38,7 @@
 		B0000000000000000000001D = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsView.swift; sourceTree = "<group>"; };
 		B0000000000000000000001E = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B0000000000000000000001F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStatisticsViewModel.swift; sourceTree = "<group>"; };
+		B00000000000000000000050 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		C10000000000000000000003 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFlowUnitTests.swift; sourceTree = "<group>"; };
 		C10000000000000000000004 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFlowUITests.swift; sourceTree = "<group>"; };
 		C10000000000000000000005 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TaskManagerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,7 +54,7 @@
 		B00000000000000000000032 = {isa = PBXGroup; children = (B00000000000000000000038, B00000000000000000000039, B0000000000000000000004A, B0000000000000000000004B,); path = Views; sourceTree = "<group>"; };
 		B00000000000000000000033 = {isa = PBXGroup; children = (B00000000000000000000014, B0000000000000000000001F,); path = ViewModels; sourceTree = "<group>"; };
 		B00000000000000000000034 = {isa = PBXGroup; children = (B00000000000000000000015, B0000000000000000000001A,); path = Components; sourceTree = "<group>"; };
-		B00000000000000000000035 = {isa = PBXGroup; children = (B00000000000000000000017,); path = Services; sourceTree = "<group>"; };
+		B00000000000000000000035 = {isa = PBXGroup; children = (B00000000000000000000017, B00000000000000000000050,); path = Services; sourceTree = "<group>"; };
 		B00000000000000000000036 = {isa = PBXGroup; children = (); path = Utilities; sourceTree = "<group>"; };
 		B00000000000000000000037 = {isa = PBXGroup; children = (); path = Resources; sourceTree = "<group>"; };
 		B00000000000000000000038 = {isa = PBXGroup; children = (B00000000000000000000013,); path = Home; sourceTree = "<group>"; };
