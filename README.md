@@ -26,7 +26,7 @@ The project separates the SwiftData model, task actions, app entry point, dashbo
 ## Project structure
 
 ```text
-TaskManager/
+TaskFlow/
 ├── App/                  # App entry point and model container
 ├── Models/               # SwiftData task model and category/priority types
 ├── Views/

@@ -1,0 +1,7 @@
+# Xcode user-specific settings and local build products
+**/xcuserdata/
+DerivedData/
+build/
+
+# macOS filesystem metadata
+.DS_Store
