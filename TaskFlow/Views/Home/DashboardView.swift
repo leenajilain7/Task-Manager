@@ -31,8 +31,7 @@ struct DashboardView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView(showsIndicators: false) {
+        ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 22) {
                     greeting
                     progressCard
@@ -52,8 +51,8 @@ struct DashboardView: View {
                         .font(.system(size: 15, weight: .semibold))
                         .padding(.horizontal, 18).frame(height: 54)
                         .foregroundStyle(.white)
-                        .background(FlowStyle.accent, in: Capsule())
-                        .shadow(color: FlowStyle.accent.opacity(0.28), radius: 14, y: 7)
+                        .background(TaskFlowStyle.accent, in: Capsule())
+                        .shadow(color: TaskFlowStyle.accent.opacity(0.28), radius: 14, y: 7)
                 }
                 .accessibilityLabel("Add task")
                 .padding(.trailing, 20).padding(.bottom, 16)
@@ -69,8 +68,6 @@ struct DashboardView: View {
             } message: {
                 Text(errorMessage ?? "Please try again.")
             }
-        }
-        .tint(FlowStyle.accent)
     }
 
     private var greeting: some View {
@@ -86,9 +83,9 @@ struct DashboardView: View {
             Spacer()
             Image(systemName: "sparkles")
                 .font(.system(size: 19, weight: .semibold))
-                .foregroundStyle(FlowStyle.accent)
+                .foregroundStyle(TaskFlowStyle.accent)
                 .frame(width: 46, height: 46)
-                .background(FlowStyle.accent.opacity(0.12), in: Circle())
+                .background(TaskFlowStyle.accent.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
         }
     }
@@ -120,12 +117,12 @@ struct DashboardView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LinearGradient(colors: [FlowStyle.accent, Color(red: 0.59, green: 0.48, blue: 0.94)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))
+        .background(LinearGradient(colors: [TaskFlowStyle.accent, Color(red: 0.59, green: 0.48, blue: 0.94)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))
     }
 
     private var summaryCards: some View {
         HStack(spacing: 10) {
-            SummaryCard(title: "Total", count: tasks.count, symbol: "square.stack.3d.up", tint: FlowStyle.accent)
+            SummaryCard(title: "Total", count: tasks.count, symbol: "square.stack.3d.up", tint: TaskFlowStyle.accent)
             SummaryCard(title: "Pending", count: pendingCount, symbol: "circle.dashed", tint: .orange)
             SummaryCard(title: "Done", count: completedCount, symbol: "checkmark.circle", tint: .green)
         }
@@ -168,7 +165,7 @@ struct DashboardView: View {
                     Button { self.categoryFilter = nil } label: { Image(systemName: "xmark.circle.fill") }
                         .accessibilityLabel("Clear category filter")
                 }
-                .foregroundStyle(FlowStyle.accent)
+                .foregroundStyle(TaskFlowStyle.accent)
             }
 
             if visibleTasks.isEmpty {
@@ -257,19 +254,3 @@ private struct SummaryCard: View {
     }
 }
 
-private enum FlowStyle {
-    static let accent = Color(red: 0.42, green: 0.34, blue: 0.88)
-}
-
-extension TaskCategory {
-    var color: Color {
-        switch self {
-        case .personal: .teal
-        case .work: .orange
-        case .study: FlowStyle.accent
-        case .shopping: .pink
-        case .health: .green
-        case .other: .blue
-        }
-    }
-}

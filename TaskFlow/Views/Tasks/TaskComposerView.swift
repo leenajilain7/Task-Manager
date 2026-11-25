@@ -4,12 +4,22 @@ import SwiftData
 struct TaskComposerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @State private var title = ""
-    @State private var taskDescription = ""
-    @State private var category: TaskCategory = .personal
-    @State private var priority: TaskPriority = .medium
-    @State private var dueDate = Date.now
+    let task: TaskItem?
+    @State private var title: String
+    @State private var taskDescription: String
+    @State private var category: TaskCategory
+    @State private var priority: TaskPriority
+    @State private var dueDate: Date
     @State private var errorMessage: String?
+
+    init(task: TaskItem? = nil) {
+        self.task = task
+        _title = State(initialValue: task?.title ?? "")
+        _taskDescription = State(initialValue: task?.taskDescription ?? "")
+        _category = State(initialValue: task?.category ?? .personal)
+        _priority = State(initialValue: task?.priority ?? .medium)
+        _dueDate = State(initialValue: task?.dueDate ?? .now)
+    }
 
     private var canSave: Bool { !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
@@ -38,14 +48,14 @@ struct TaskComposerView: View {
                     }
                 }
             }
-            .navigationTitle("New task")
+            .navigationTitle(task == nil ? "New task" : "Edit task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { saveTask() }
+                    Button(task == nil ? "Add" : "Save") { saveTask() }
                         .disabled(!canSave)
                 }
             }
@@ -54,13 +64,25 @@ struct TaskComposerView: View {
 
     private func saveTask() {
         do {
-            try TaskViewModel(context: modelContext).createTask(
-                title: title,
-                description: taskDescription,
-                dueDate: dueDate,
-                category: category,
-                priority: priority
-            )
+            let viewModel = TaskViewModel(context: modelContext)
+            if let task {
+                try viewModel.updateTask(
+                    task,
+                    title: title,
+                    description: taskDescription,
+                    dueDate: dueDate,
+                    category: category,
+                    priority: priority
+                )
+            } else {
+                try viewModel.createTask(
+                    title: title,
+                    description: taskDescription,
+                    dueDate: dueDate,
+                    category: category,
+                    priority: priority
+                )
+            }
             dismiss()
         } catch {
             errorMessage = error.localizedDescription

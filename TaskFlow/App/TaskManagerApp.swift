@@ -15,7 +15,7 @@ struct TaskManagerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            DashboardView()
+            RootTabView()
                 .modelContainer(container)
                 .task {
                     do {
