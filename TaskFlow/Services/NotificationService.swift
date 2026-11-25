@@ -51,7 +51,7 @@ protocol TaskReminderScheduling {
 @MainActor
 @Observable
 final class NotificationService: TaskReminderScheduling {
-    static let reminderPreferenceKey = "taskflow.remindersEnabled"
+    nonisolated static let reminderPreferenceKey = "taskflow.remindersEnabled"
     static let identifierPrefix = "taskflow.task."
 
     private(set) var authorization: TaskFlowNotificationAuthorization = .notDetermined

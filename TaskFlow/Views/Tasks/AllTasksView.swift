@@ -113,6 +113,7 @@ struct AllTasksView: View {
     private func toggle(_ task: TaskItem) {
         do {
             try viewModel.toggleCompletion(for: task)
+            TaskFlowHaptics.success()
             Task { await TaskReminderCoordinator(service: notificationService).completionDidChange(for: task) }
         }
         catch { errorMessage = error.localizedDescription }

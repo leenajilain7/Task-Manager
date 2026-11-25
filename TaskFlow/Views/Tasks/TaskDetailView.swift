@@ -129,6 +129,7 @@ struct TaskDetailView: View {
     private func toggleCompletion() {
         do {
             try TaskViewModel(context: modelContext).toggleCompletion(for: task)
+            TaskFlowHaptics.success()
             Task { await TaskReminderCoordinator(service: notificationService).completionDidChange(for: task) }
         } catch {
             errorMessage = error.localizedDescription
@@ -138,6 +139,7 @@ struct TaskDetailView: View {
     private func deleteTask() {
         do {
             try TaskViewModel(context: modelContext).delete(task)
+            TaskFlowHaptics.impact()
             Task { await TaskReminderCoordinator(service: notificationService).taskWasDeleted(task) }
             dismiss()
         } catch {

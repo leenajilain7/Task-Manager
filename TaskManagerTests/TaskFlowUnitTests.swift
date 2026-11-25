@@ -31,6 +31,59 @@ private func utcCalendar() -> Calendar {
     return calendar
 }
 
+@Suite("TaskFlow preferences")
+struct TaskFlowPreferencesTests {
+    private func isolatedDefaults() -> UserDefaults {
+        let suiteName = "TaskFlowTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
+        defaults.removePersistentDomain(forName: suiteName)
+        return defaults
+    }
+
+    @Test func appearancePreferencePersistsAcrossInstances() {
+        let defaults = isolatedDefaults()
+        TaskFlowPreferences(defaults: defaults).appearance = .dark
+
+        #expect(TaskFlowPreferences(defaults: defaults).appearance == .dark)
+    }
+
+    @Test func defaultPriorityAndCategoryPersist() {
+        let defaults = isolatedDefaults()
+        let preferences = TaskFlowPreferences(defaults: defaults)
+        preferences.defaultPriority = .high
+        preferences.defaultCategory = .study
+
+        #expect(TaskFlowPreferences(defaults: defaults).defaultPriority == .high)
+        #expect(TaskFlowPreferences(defaults: defaults).defaultCategory == .study)
+    }
+
+    @Test func reminderAndHapticPreferencesPersist() {
+        let defaults = isolatedDefaults()
+        let preferences = TaskFlowPreferences(defaults: defaults)
+        preferences.defaultReminderEnabled = true
+        preferences.remindersEnabled = false
+        preferences.hapticsEnabled = false
+
+        let restored = TaskFlowPreferences(defaults: defaults)
+        #expect(restored.defaultReminderEnabled)
+        #expect(!restored.remindersEnabled)
+        #expect(!restored.hapticsEnabled)
+    }
+
+    @Test func weekStartPreferencePersistsAndConfiguresCalendar() {
+        let defaults = isolatedDefaults()
+        TaskFlowPreferences(defaults: defaults).weekStart = .monday
+        let preferences = TaskFlowPreferences(defaults: defaults)
+        var base = Calendar(identifier: .gregorian)
+        base.firstWeekday = 7
+
+        #expect(preferences.weekStart == .monday)
+        #expect(preferences.weekStart.calendar(from: base).firstWeekday == 2)
+        #expect(TaskFlowWeekStart.sunday.calendar(from: base).firstWeekday == 1)
+        #expect(TaskFlowWeekStart.system.calendar(from: base).firstWeekday == 7)
+    }
+}
+
 @MainActor
 @Suite("Task management, search, and filtering")
 struct TaskViewModelTests {
@@ -247,6 +300,17 @@ struct TaskStatisticsTests {
 
         #expect(statistics.weeklyCompletions.count == 7)
         #expect(statistics.weeklyCompletions.map(\.count) == [1, 0, 1, 0, 0, 0, 0])
+    }
+
+    @Test func weeklyChartStartsOnPreferredWeekday() throws {
+        let reference = try isoDate("2026-11-25T12:00:00Z")
+        let monday = TaskStatisticsViewModel(tasks: [], calendar: TaskFlowWeekStart.monday.calendar(from: utcCalendar()), referenceDate: reference)
+        let sunday = TaskStatisticsViewModel(tasks: [], calendar: TaskFlowWeekStart.sunday.calendar(from: utcCalendar()), referenceDate: reference)
+        let expectedMonday = try isoDate("2026-11-23T00:00:00Z")
+        let expectedSunday = try isoDate("2026-11-22T00:00:00Z")
+
+        #expect(monday.weeklyCompletions.first?.date == expectedMonday)
+        #expect(sunday.weeklyCompletions.first?.date == expectedSunday)
     }
 
     @Test func categoryDistributionIncludesEachStoredCategory() {

@@ -184,6 +184,7 @@ struct DashboardView: View {
                         TaskRow(task: task) {
                             do {
                                 try TaskViewModel(context: modelContext).toggleCompletion(for: task)
+                                TaskFlowHaptics.success()
                                 Task { await TaskReminderCoordinator(service: notificationService).completionDidChange(for: task) }
                             }
                             catch { errorMessage = error.localizedDescription }

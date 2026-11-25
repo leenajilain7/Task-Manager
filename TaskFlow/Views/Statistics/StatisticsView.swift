@@ -4,8 +4,12 @@ import Charts
 
 struct StatisticsView: View {
     @Query private var tasks: [TaskItem]
+    @AppStorage(TaskFlowPreferences.weekStartKey) private var weekStartValue = TaskFlowWeekStart.system.rawValue
 
-    private var statistics: TaskStatisticsViewModel { TaskStatisticsViewModel(tasks: tasks) }
+    private var statistics: TaskStatisticsViewModel {
+        let preference = TaskFlowWeekStart(rawValue: weekStartValue) ?? .system
+        return TaskStatisticsViewModel(tasks: tasks, calendar: preference.calendar())
+    }
 
     var body: some View {
         ScrollView {

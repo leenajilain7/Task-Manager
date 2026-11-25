@@ -19,10 +19,10 @@ struct TaskComposerView: View {
         self.task = task
         _title = State(initialValue: task?.title ?? "")
         _taskDescription = State(initialValue: task?.taskDescription ?? "")
-        _category = State(initialValue: task?.category ?? .personal)
-        _priority = State(initialValue: task?.priority ?? .medium)
+        _category = State(initialValue: task?.category ?? TaskFlowPreferences().defaultCategory)
+        _priority = State(initialValue: task?.priority ?? TaskFlowPreferences().defaultPriority)
         _dueDate = State(initialValue: task?.dueDate ?? .now)
-        _reminderEnabled = State(initialValue: task?.reminderDate != nil)
+        _reminderEnabled = State(initialValue: task.map { $0.reminderDate != nil } ?? TaskFlowPreferences().defaultReminderEnabled)
         _reminderDate = State(initialValue: task?.reminderDate ?? Date.now.addingTimeInterval(3600))
     }
 
@@ -117,6 +117,7 @@ struct TaskComposerView: View {
                     reminderDate: reminderEnabled ? reminderDate : nil
                 )
             }
+            TaskFlowHaptics.success()
             dismiss()
             Task {
                 await TaskReminderCoordinator(service: notificationService).synchronize(savedTask)

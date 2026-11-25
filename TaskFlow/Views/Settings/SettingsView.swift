@@ -3,8 +3,13 @@ import SwiftData
 import UIKit
 
 struct SettingsView: View {
-    @AppStorage("taskflow.appearance") private var appearanceValue = AppAppearance.system.rawValue
+    @AppStorage(TaskFlowPreferences.appearanceKey) private var appearanceValue = AppAppearance.system.rawValue
     @AppStorage(NotificationService.reminderPreferenceKey) private var remindersEnabled = true
+    @AppStorage(TaskFlowPreferences.defaultPriorityKey) private var defaultPriorityValue = TaskPriority.medium.rawValue
+    @AppStorage(TaskFlowPreferences.defaultCategoryKey) private var defaultCategoryValue = TaskCategory.personal.rawValue
+    @AppStorage(TaskFlowPreferences.defaultReminderKey) private var defaultReminderEnabled = false
+    @AppStorage(TaskFlowPreferences.hapticsKey) private var hapticsEnabled = true
+    @AppStorage(TaskFlowPreferences.weekStartKey) private var weekStartValue = TaskFlowWeekStart.system.rawValue
     @Environment(NotificationService.self) private var notificationService
     @Environment(\.scenePhase) private var scenePhase
     @Query private var tasks: [TaskItem]
@@ -20,6 +25,33 @@ struct SettingsView: View {
                     }
                 }
                 .accessibilityLabel("Appearance theme")
+            }
+
+            Section("New Task Defaults") {
+                Picker("Default priority", selection: $defaultPriorityValue) {
+                    ForEach(TaskPriority.allCases) { option in Text(option.rawValue).tag(option.rawValue) }
+                }
+                .accessibilityIdentifier("settings.defaultPriority")
+                Picker("Default category", selection: $defaultCategoryValue) {
+                    ForEach(TaskCategory.allCases) { option in Text(option.rawValue).tag(option.rawValue) }
+                }
+                .accessibilityIdentifier("settings.defaultCategory")
+                Toggle("Enable reminders by default", isOn: $defaultReminderEnabled)
+                    .accessibilityIdentifier("settings.defaultReminder")
+            }
+
+            Section("Calendar") {
+                Picker("First day of the week", selection: $weekStartValue) {
+                    ForEach(TaskFlowWeekStart.allCases) { option in Text(option.title).tag(option.rawValue) }
+                }
+                .accessibilityIdentifier("settings.weekStart")
+                Text("This changes the weekly statistics chart. System Default follows your device calendar.")
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+
+            Section("Interaction") {
+                Toggle("Haptic feedback", isOn: $hapticsEnabled)
+                    .accessibilityIdentifier("settings.hapticsEnabled")
             }
 
             Section("Notifications") {
@@ -73,6 +105,8 @@ struct SettingsView: View {
                 }
                 Text("A simple space to plan, focus, and keep track of what matters.")
                     .font(.system(size: 13)).foregroundStyle(.secondary)
+                LabeledContent("Built with", value: "SwiftUI · SwiftData · Swift Charts")
+                LabeledContent("Developer", value: "Your name here")
             }
         }
         .navigationTitle("Settings")
@@ -92,7 +126,7 @@ struct SettingsView: View {
     }
 
     private var versionString: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String
         guard let build, !build.isEmpty else { return version }
         return "\(version) (\(build))"

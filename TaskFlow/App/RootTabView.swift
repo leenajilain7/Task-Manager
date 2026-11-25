@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RootTabView: View {
-    @AppStorage("taskflow.appearance") private var appearanceValue = AppAppearance.system.rawValue
+    @AppStorage(TaskFlowPreferences.appearanceKey) private var appearanceValue = AppAppearance.system.rawValue
 
     private var appearance: AppAppearance {
         AppAppearance(rawValue: appearanceValue) ?? .system
@@ -41,7 +41,13 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     case dark
 
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .system: "System Default"
+        case .light: "Light Mode"
+        case .dark: "Dark Mode"
+        }
+    }
 
     var colorScheme: ColorScheme? {
         switch self {
