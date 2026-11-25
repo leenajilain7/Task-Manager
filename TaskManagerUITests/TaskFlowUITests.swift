@@ -121,6 +121,9 @@ final class TaskFlowUITests: XCTestCase {
         app.tabBars.buttons["Settings"].tap()
 
         let explanation = app.staticTexts["TaskFlow uses notifications to alert you at the reminder time you choose."]
+        for _ in 0..<5 where !explanation.exists {
+            app.swipeUp()
+        }
         XCTAssertTrue(explanation.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Permission status"].exists || app.otherElements["settings.notificationStatus"].exists)
         XCTAssertTrue(
