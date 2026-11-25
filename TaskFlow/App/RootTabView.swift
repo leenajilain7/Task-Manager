@@ -30,6 +30,7 @@ struct RootTabView: View {
             .tabItem { Label("Settings", systemImage: "gearshape.fill").accessibilityIdentifier("tab.settings") }
         }
         .tint(TaskFlowStyle.accent)
+        .toolbarBackground(TaskFlowStyle.surface, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .preferredColorScheme(appearance.colorScheme)
     }

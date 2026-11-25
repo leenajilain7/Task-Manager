@@ -5,6 +5,7 @@ import Charts
 struct StatisticsView: View {
     @Query private var tasks: [TaskItem]
     @AppStorage(TaskFlowPreferences.weekStartKey) private var weekStartValue = TaskFlowWeekStart.system.rawValue
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var statistics: TaskStatisticsViewModel {
         let preference = TaskFlowWeekStart(rawValue: weekStartValue) ?? .system
@@ -13,8 +14,8 @@ struct StatisticsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            VStack(alignment: .leading, spacing: TaskFlowStyle.space5) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: TaskFlowStyle.space3) {
                     MetricCard(title: "Total tasks", value: "\(statistics.totalCount)", symbol: "square.stack.3d.up", tint: TaskFlowStyle.accent)
                     MetricCard(title: "Completed", value: "\(statistics.completedCount)", symbol: "checkmark.circle.fill", tint: .green)
                     MetricCard(title: "Pending", value: "\(statistics.pendingCount)", symbol: "circle.dashed", tint: .orange)
@@ -28,7 +29,7 @@ struct StatisticsView: View {
                         description: Text("Add tasks and mark them complete to see your progress here.")
                     )
                     .frame(maxWidth: .infinity, minHeight: 250)
-                    .background(TaskFlowStyle.secondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 20))
+                    .taskFlowCard(radius: TaskFlowStyle.largeRadius)
                 } else {
                     weeklyChart
                     categoryChart
@@ -38,13 +39,14 @@ struct StatisticsView: View {
         }
         .background(TaskFlowStyle.groupedBackground)
         .navigationTitle("Statistics")
+        .animation(reduceMotion ? nil : .snappy(duration: 0.25), value: tasks.map(\.id))
     }
 
     private var weeklyChart: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Weekly completions").font(.system(size: 17, weight: .bold, design: .rounded))
-                Text("Tasks completed this week").font(.system(size: 12)).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: TaskFlowStyle.space4) {
+            VStack(alignment: .leading, spacing: TaskFlowStyle.space1) {
+                Text("Weekly completions").font(TaskFlowStyle.sectionTitle)
+                Text("Tasks completed this week").font(TaskFlowStyle.caption).foregroundStyle(.secondary)
             }
 
             Chart(statistics.weeklyCompletions) { day in
@@ -55,20 +57,22 @@ struct StatisticsView: View {
                 .foregroundStyle(TaskFlowStyle.accent.gradient)
                 .cornerRadius(5)
             }
+            .chartXAxis { AxisMarks(values: .automatic(desiredCount: 7)) }
             .chartYAxis { AxisMarks(position: .leading, values: .automatic) }
             .chartLegend(.hidden)
-            .frame(height: 190)
+            .frame(minHeight: 190)
             .accessibilityLabel("Weekly task completions chart")
+            .accessibilityHint("Completed task count for each day of the selected week")
         }
-        .padding(18)
-        .background(TaskFlowStyle.secondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 20))
+        .padding(TaskFlowStyle.space4)
+        .taskFlowCard(radius: TaskFlowStyle.largeRadius)
     }
 
     private var categoryChart: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Tasks by category").font(.system(size: 17, weight: .bold, design: .rounded))
-                Text("All saved tasks").font(.system(size: 12)).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: TaskFlowStyle.space4) {
+            VStack(alignment: .leading, spacing: TaskFlowStyle.space1) {
+                Text("Tasks by category").font(TaskFlowStyle.sectionTitle)
+                Text("All saved tasks").font(TaskFlowStyle.caption).foregroundStyle(.secondary)
             }
 
             Chart(statistics.categoryDistribution) { item in
@@ -81,15 +85,17 @@ struct StatisticsView: View {
             }
             .chartXAxis { AxisMarks(position: .bottom, values: .automatic) }
             .chartLegend(.hidden)
-            .frame(height: 220)
+            .frame(minHeight: 220)
             .accessibilityLabel("Task counts by category chart")
+            .accessibilityHint("Distribution of saved tasks across categories")
         }
-        .padding(18)
-        .background(TaskFlowStyle.secondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 20))
+        .padding(TaskFlowStyle.space4)
+        .taskFlowCard(radius: TaskFlowStyle.largeRadius)
     }
 }
 
 private struct MetricCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: String
     let value: String
     let symbol: String
@@ -97,12 +103,17 @@ private struct MetricCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(tint)
-            Text(value).font(.system(size: 25, weight: .bold, design: .rounded)).contentTransition(.numericText())
-            Text(title).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            Image(systemName: symbol).font(.title3.weight(.semibold)).foregroundStyle(tint)
+            Text(value)
+                .font(.system(.title2, design: .rounded).weight(.bold))
+                .contentTransition(reduceMotion ? .identity : .numericText())
+            Text(title).font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(TaskFlowStyle.secondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 17))
+        .padding(TaskFlowStyle.space4)
+        .taskFlowCard(radius: TaskFlowStyle.smallRadius)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(value)
     }
 }

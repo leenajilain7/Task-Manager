@@ -4,6 +4,7 @@ import SwiftData
 struct AllTasksView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(NotificationService.self) private var notificationService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \TaskItem.dueDate) private var tasks: [TaskItem]
     @State private var searchText = ""
     @State private var status: TaskListStatus = .all
@@ -59,6 +60,7 @@ struct AllTasksView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: visibleTasks.map(\.id))
         .navigationTitle("All Tasks")
         .searchable(text: $searchText, prompt: "Search task titles")
         .accessibilityIdentifier("tasks.search")

@@ -5,6 +5,7 @@ struct TaskDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(NotificationService.self) private var notificationService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let task: TaskItem
 
     @State private var showingEditor = false
@@ -13,7 +14,7 @@ struct TaskDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: TaskFlowStyle.space5) {
                 HStack(spacing: 8) {
                     Label(task.category.rawValue, systemImage: "folder")
                         .foregroundStyle(task.category.color)
@@ -21,10 +22,10 @@ struct TaskDetailView: View {
                     Label(task.priority.rawValue, systemImage: "flag.fill")
                         .foregroundStyle(task.priority.color)
                 }
-                .font(.system(size: 13, weight: .semibold))
+                .font(TaskFlowStyle.secondaryText.weight(.semibold))
 
                 Text(task.title)
-                    .font(.system(size: 27, weight: .bold, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("task.detailTitle")
 
@@ -54,14 +55,14 @@ struct TaskDetailView: View {
                         Spacer()
                         if let completedAt = task.completedAt {
                             Text("\(completedAt.formatted(date: .abbreviated, time: .shortened))")
-                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                                .font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                 }
 
                 Button(action: toggleCompletion) {
                     Label(task.isComplete ? "Mark as pending" : "Mark as completed", systemImage: task.isComplete ? "arrow.uturn.backward" : "checkmark")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.headline)
                         .frame(maxWidth: .infinity).frame(height: 50)
                 }
                 .buttonStyle(.borderedProminent)
@@ -73,6 +74,7 @@ struct TaskDetailView: View {
         .background(TaskFlowStyle.groupedBackground)
         .navigationTitle("Task details")
         .navigationBarTitleDisplayMode(.inline)
+        .animation(reduceMotion ? nil : .snappy(duration: 0.22), value: task.isComplete)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Done") { dismiss() }
@@ -117,13 +119,13 @@ struct TaskDetailView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(title, systemImage: symbol)
-                .font(.system(size: 12, weight: .semibold))
+                .font(TaskFlowStyle.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
-            content().font(.system(size: 15))
+            content().font(TaskFlowStyle.body)
         }
-        .padding(16)
+        .padding(TaskFlowStyle.space4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(TaskFlowStyle.secondaryGroupedBackground, in: RoundedRectangle(cornerRadius: TaskFlowStyle.cardRadius))
+        .taskFlowCard()
     }
 
     private func toggleCompletion() {

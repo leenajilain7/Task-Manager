@@ -4,6 +4,7 @@ import SwiftData
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(NotificationService.self) private var notificationService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \TaskItem.dueDate) private var tasks: [TaskItem]
     @State private var searchText = ""
     @State private var statusFilter: TaskStatusFilter = .all
@@ -45,19 +46,26 @@ struct DashboardView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 100)
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+                .background(TaskFlowStyle.groupedBackground)
+                .animation(reduceMotion ? nil : .snappy(duration: 0.24), value: visibleTasks.map(\.id))
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: todayProgress)
             .navigationBarHidden(true)
             .overlay(alignment: .bottomTrailing) {
-                Button { showingComposer = true } label: {
-                    Label("Add task", systemImage: "plus")
-                        .font(.system(size: 15, weight: .semibold))
-                        .padding(.horizontal, 18).frame(height: 54)
-                        .foregroundStyle(.white)
-                        .background(TaskFlowStyle.accent, in: Capsule())
-                        .shadow(color: TaskFlowStyle.accent.opacity(0.28), radius: 14, y: 7)
+                if !usesInlineEmptyAction {
+                    Button { showingComposer = true } label: {
+                        Label("Add task", systemImage: "plus")
+                            .font(.headline)
+                            .padding(.horizontal, 18).frame(height: 54)
+                            .foregroundStyle(TaskFlowStyle.onAccent)
+                            .background(TaskFlowStyle.accent, in: Capsule())
+                            .shadow(color: TaskFlowStyle.accent.opacity(0.28), radius: 14, y: 7)
+                    }
+                    .accessibilityLabel("Add task")
+                    .accessibilityHint("Create a task with a title, due date, and optional reminder")
+                    .accessibilityIdentifier("dashboard.addTask")
+                    .frame(minWidth: 44, minHeight: 44)
+                    .padding(.trailing, 20).padding(.bottom, 16)
                 }
-                .accessibilityLabel("Add task")
-                .padding(.trailing, 20).padding(.bottom, 16)
             }
             .sheet(isPresented: $showingComposer) {
                 TaskComposerView()
@@ -76,15 +84,15 @@ struct DashboardView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 5) {
                 Text(Date.now.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                    .font(TaskFlowStyle.secondaryText.weight(.medium)).foregroundStyle(.secondary)
                 Text("\(timeGreeting)!")
-                    .font(.system(size: 27, weight: .bold, design: .rounded)).foregroundStyle(.primary)
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold)).foregroundStyle(.primary)
                 Text("Let’s make today count.")
-                    .font(.system(size: 14)).foregroundStyle(.secondary)
+                    .font(TaskFlowStyle.body).foregroundStyle(.secondary)
             }
             Spacer()
             Image(systemName: "sparkles")
-                .font(.system(size: 19, weight: .semibold))
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(TaskFlowStyle.accent)
                 .frame(width: 46, height: 46)
                 .background(TaskFlowStyle.accent.opacity(0.12), in: Circle())
@@ -97,11 +105,11 @@ struct DashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Today’s focus")
                     .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.78))
-                Text(todayTasks.isEmpty ? "A fresh start." : "You’re making\nsteady progress.")
-                    .font(.system(size: 20, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                Text(progressHeadline)
+                    .font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(todayTasks.isEmpty ? "Add a task to get started" : "\(todayTasks.filter { !$0.isComplete }.count) tasks left today")
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.8))
+                Text(progressSummary)
+                    .font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.white.opacity(0.86))
             }
             Spacer(minLength: 0)
             ZStack {
@@ -111,15 +119,21 @@ struct DashboardView: View {
                     .rotationEffect(.degrees(-90))
                 VStack(spacing: 1) {
                     Text("\(Int(todayProgress * 100))%")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                    Text("DONE").font(.system(size: 8, weight: .bold)).tracking(0.8)
+                        .font(.system(.headline, design: .rounded).weight(.bold))
+                    Text("DONE").font(.system(.caption2, design: .rounded).weight(.bold)).tracking(0.6)
                 }.foregroundStyle(.white)
             }
             .frame(width: 62, height: 62)
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(LinearGradient(colors: [TaskFlowStyle.accent, Color(red: 0.59, green: 0.48, blue: 0.94)], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 22))
+        .background(
+            LinearGradient(colors: [TaskFlowStyle.heroStart, TaskFlowStyle.heroEnd], startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: TaskFlowStyle.largeRadius, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Today’s focus")
+        .accessibilityValue("\(todayTasks.filter { $0.isComplete }.count) of \(todayTasks.count) tasks complete, \(Int(todayProgress * 100)) percent")
     }
 
     private var summaryCards: some View {
@@ -133,9 +147,9 @@ struct DashboardView: View {
     private var todaySection: some View {
         VStack(alignment: .leading, spacing: 13) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Today").font(.system(size: 19, weight: .bold, design: .rounded))
+                Text("Today").font(TaskFlowStyle.sectionTitle)
                 Text("\(todayTasks.filter { !$0.isComplete }.count) left")
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    .font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.secondary)
                 Spacer()
                 Menu {
                     Picker("Status", selection: $statusFilter) {
@@ -149,21 +163,22 @@ struct DashboardView: View {
                     }
                 } label: {
                     Label("Filter", systemImage: "slider.horizontal.3")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(TaskFlowStyle.smallCaption.weight(.semibold))
                 }
             }
 
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField("Search by task title", text: $searchText)
-                    .font(.system(size: 14)).autocorrectionDisabled()
+                    .font(TaskFlowStyle.body).autocorrectionDisabled()
+                    .accessibilityIdentifier("dashboard.search")
             }
             .padding(.horizontal, 14).frame(height: 44)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 13))
+            .taskFlowCard(radius: TaskFlowStyle.smallRadius)
 
             if let categoryFilter {
                 HStack(spacing: 6) {
-                    Text(categoryFilter.rawValue).font(.system(size: 11, weight: .semibold))
+                    Text(categoryFilter.rawValue).font(TaskFlowStyle.caption.weight(.semibold))
                     Button { self.categoryFilter = nil } label: { Image(systemName: "xmark.circle.fill") }
                         .accessibilityLabel("Clear category filter")
                 }
@@ -171,13 +186,20 @@ struct DashboardView: View {
             }
 
             if visibleTasks.isEmpty {
+                if usesInlineEmptyAction {
+                    Button("Add task", systemImage: "plus") { showingComposer = true }
+                        .buttonStyle(.borderedProminent)
+                        .tint(TaskFlowStyle.accent)
+                        .accessibilityIdentifier("dashboard.addTask")
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
                 ContentUnavailableView(
                     searchText.isEmpty ? "Nothing scheduled today" : "No matching tasks",
-                    systemImage: searchText.isEmpty ? "checkmark.circle" : "magnifyingglass",
-                    description: Text(searchText.isEmpty ? "Tap Add task to put something on your list." : "Try another title or filter.")
+                    systemImage: searchText.isEmpty ? "sun.max" : "magnifyingglass",
+                    description: Text(searchText.isEmpty ? "Your day is open. Add a task whenever you’re ready." : "Try another title or filter.")
                 )
-                .frame(maxWidth: .infinity).padding(.vertical, 18)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 17))
+                .frame(maxWidth: .infinity).padding(.vertical, TaskFlowStyle.space4)
+                .taskFlowCard()
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(visibleTasks.enumerated()), id: \.element.id) { index, task in
@@ -192,7 +214,7 @@ struct DashboardView: View {
                         if index < visibleTasks.count - 1 { Divider().padding(.leading, 54) }
                     }
                 }
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 17))
+                .taskFlowCard()
             }
         }
     }
@@ -204,23 +226,24 @@ struct DashboardView: View {
             if !upcoming.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Coming up").font(.system(size: 19, weight: .bold, design: .rounded))
+                        Text("Coming up").font(TaskFlowStyle.sectionTitle)
                         Spacer()
-                        Text("\(upcoming.count)").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                        Text("\(upcoming.count)").font(TaskFlowStyle.caption.weight(.semibold)).foregroundStyle(.secondary)
                     }
                     ForEach(upcoming.prefix(3)) { task in
                         HStack(spacing: 12) {
                             RoundedRectangle(cornerRadius: 2).fill(task.category.color).frame(width: 3, height: 36)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(task.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
-                                Text(task.category.rawValue).font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                                Text(task.title).font(TaskFlowStyle.cardTitle).foregroundStyle(.primary).lineLimit(2)
+                                Text(task.category.rawValue).font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.secondary)
                             }
                             Spacer()
                             Text(task.dueDate.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                                .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                                .font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.secondary)
+                                .accessibilityLabel("Due \(task.dueDate.formatted(date: .complete, time: .shortened))")
                         }
                         .padding(13)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
+                        .taskFlowCard(radius: TaskFlowStyle.smallRadius)
                     }
                 }
             }
@@ -233,6 +256,27 @@ struct DashboardView: View {
         case 12..<17: "Good afternoon"
         default: "Good evening"
         }
+    }
+
+    private var progressHeadline: String {
+        if todayTasks.isEmpty { "A fresh start." }
+        else if todayProgress >= 1 { "Everything is done." }
+        else { "One step at a time." }
+    }
+
+    private var progressSummary: String {
+        let remaining = todayTasks.filter { !$0.isComplete }.count
+        if todayTasks.isEmpty { return "Add a task to get started" }
+        if remaining == 0 { return "You’ve finished today’s tasks" }
+        return "\(remaining) \(remaining == 1 ? "task" : "tasks") left today"
+    }
+
+    private var showingFirstTaskEmptyState: Bool {
+        todayTasks.isEmpty && searchText.isEmpty && statusFilter == .all && categoryFilter == nil
+    }
+
+    private var usesInlineEmptyAction: Bool {
+        showingFirstTaskEmptyState
     }
 }
 
@@ -250,13 +294,16 @@ private struct SummaryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 13) {
-            Image(systemName: symbol).font(.system(size: 15, weight: .semibold)).foregroundStyle(tint)
-            Text("\(count)").font(.system(size: 23, weight: .bold, design: .rounded)).contentTransition(.numericText())
-            Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+            Image(systemName: symbol).font(.title3.weight(.semibold)).foregroundStyle(tint)
+            Text("\(count)").font(.system(.title2, design: .rounded).weight(.bold)).contentTransition(.numericText())
+            Text(title).font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(13)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .padding(TaskFlowStyle.space3)
+        .taskFlowCard(radius: TaskFlowStyle.smallRadius)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title) tasks")
+        .accessibilityValue("\(count)")
     }
 }
 

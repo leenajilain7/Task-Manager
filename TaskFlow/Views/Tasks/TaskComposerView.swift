@@ -5,6 +5,7 @@ struct TaskComposerView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(NotificationService.self) private var notificationService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let task: TaskItem?
     @State private var title: String
     @State private var taskDescription: String
@@ -14,6 +15,7 @@ struct TaskComposerView: View {
     @State private var reminderEnabled: Bool
     @State private var reminderDate: Date
     @State private var errorMessage: String?
+    @FocusState private var titleFocused: Bool
 
     init(task: TaskItem? = nil) {
         self.task = task
@@ -34,6 +36,9 @@ struct TaskComposerView: View {
                 Section("Task") {
                     TextField("Title", text: $title)
                         .textInputAutocapitalization(.sentences)
+                        .submitLabel(.done)
+                        .focused($titleFocused)
+                        .onSubmit { titleFocused = false }
                         .accessibilityIdentifier("task.title")
                     TextField("Description (optional)", text: $taskDescription, axis: .vertical)
                         .lineLimit(2...4)
@@ -41,37 +46,46 @@ struct TaskComposerView: View {
                     Picker("Category", selection: $category) {
                         ForEach(TaskCategory.allCases) { option in Text(option.rawValue).tag(option) }
                     }
+                    .pickerStyle(.menu)
+                    .accessibilityIdentifier("task.category")
                     Picker("Priority", selection: $priority) {
                         ForEach(TaskPriority.allCases) { option in Text(option.rawValue).tag(option) }
                     }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("task.priority")
                 }
                 Section("Schedule") {
                     DatePicker("Due date", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
+                        .datePickerStyle(.compact)
                     Toggle("Enable reminder", isOn: $reminderEnabled)
                         .accessibilityIdentifier("task.reminderEnabled")
                     if reminderEnabled {
                         DatePicker("Remind me", selection: $reminderDate, displayedComponents: [.date, .hourAndMinute])
+                            .datePickerStyle(.compact)
                             .accessibilityIdentifier("task.reminderDate")
                         Button("Clear reminder", role: .destructive) { reminderEnabled = false }
                             .accessibilityIdentifier("task.clearReminder")
                         if !TaskReminderDateValidator.isFuture(reminderDate) {
                             Label("Choose a reminder time in the future.", systemImage: "exclamationmark.triangle.fill")
-                                .font(.system(size: 12)).foregroundStyle(.red)
+                                .font(.footnote).foregroundStyle(TaskFlowStyle.destructive)
                                 .accessibilityIdentifier("task.invalidReminder")
                         }
                         if !notificationService.isReminderPreferenceEnabled {
-                            Text("Task reminders are turned off in Settings.")
-                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                            Label("Task reminders are turned off in Settings.", systemImage: "bell.slash")
+                                .font(.footnote).foregroundStyle(.secondary)
                         }
                     }
                 }
                 if let errorMessage {
                     Section {
                         Label(errorMessage, systemImage: "exclamationmark.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(TaskFlowStyle.destructive)
+                            .accessibilityIdentifier("task.validationMessage")
                     }
                 }
             }
+            .animation(reduceMotion ? nil : .snappy(duration: 0.2), value: reminderEnabled)
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(task == nil ? "New task" : "Edit task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
