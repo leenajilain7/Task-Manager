@@ -19,6 +19,7 @@ final class TaskViewModel {
     ) throws -> TaskItem {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { throw TaskValidationError.emptyTitle }
+        try validateDueDate(dueDate)
         let existingTasks = try context.fetch(FetchDescriptor<TaskItem>())
         guard !existingTasks.contains(where: { $0.title.localizedCaseInsensitiveCompare(cleanTitle) == .orderedSame }) else {
             throw TaskValidationError.duplicateTitle
@@ -32,7 +33,12 @@ final class TaskViewModel {
             priority: priority
         )
         context.insert(task)
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            context.delete(task)
+            throw error
+        }
         return task
     }
 
@@ -46,53 +52,72 @@ final class TaskViewModel {
     ) throws {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty else { throw TaskValidationError.emptyTitle }
+        try validateDueDate(dueDate)
+        guard let storedTask = try storedTask(withID: task.id) else { throw TaskOperationError.taskNotFound }
         let existingTasks = try context.fetch(FetchDescriptor<TaskItem>())
         guard !existingTasks.contains(where: {
-            $0.id != task.id && $0.title.localizedCaseInsensitiveCompare(cleanTitle) == .orderedSame
+            $0.id != storedTask.id && $0.title.localizedCaseInsensitiveCompare(cleanTitle) == .orderedSame
         }) else {
             throw TaskValidationError.duplicateTitle
         }
 
-        let oldValues = (task.title, task.taskDescription, task.dueDate, task.category, task.priority)
-        task.title = cleanTitle
-        task.taskDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        task.dueDate = dueDate
-        task.category = category
-        task.priority = priority
+        let oldValues = (storedTask.title, storedTask.taskDescription, storedTask.dueDate, storedTask.category, storedTask.priority)
+        storedTask.title = cleanTitle
+        storedTask.taskDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        storedTask.dueDate = dueDate
+        storedTask.category = category
+        storedTask.priority = priority
         do {
             try context.save()
         } catch {
-            task.title = oldValues.0
-            task.taskDescription = oldValues.1
-            task.dueDate = oldValues.2
-            task.category = oldValues.3
-            task.priority = oldValues.4
+            storedTask.title = oldValues.0
+            storedTask.taskDescription = oldValues.1
+            storedTask.dueDate = oldValues.2
+            storedTask.category = oldValues.3
+            storedTask.priority = oldValues.4
             throw error
         }
     }
 
     func toggleCompletion(for task: TaskItem) throws {
-        task.isComplete.toggle()
-        task.completedAt = task.isComplete ? .now : nil
-        try context.save()
+        guard let storedTask = try storedTask(withID: task.id) else { throw TaskOperationError.taskNotFound }
+        let wasComplete = storedTask.isComplete
+        let previousCompletionDate = storedTask.completedAt
+        storedTask.isComplete.toggle()
+        storedTask.completedAt = storedTask.isComplete ? .now : nil
+        do {
+            try context.save()
+        } catch {
+            storedTask.isComplete = wasComplete
+            storedTask.completedAt = previousCompletionDate
+            throw error
+        }
     }
 
     func delete(_ task: TaskItem) throws {
-        context.delete(task)
-        try context.save()
+        guard let storedTask = try storedTask(withID: task.id) else { throw TaskOperationError.taskNotFound }
+        context.delete(storedTask)
+        do {
+            try context.save()
+        } catch {
+            context.insert(storedTask)
+            throw error
+        }
     }
 
     func filteredTasks(
         _ tasks: [TaskItem],
         searchText: String,
         status: TaskListStatus,
-        sort: TaskSortOption
+        sort: TaskSortOption,
+        priority: TaskPriority? = nil
     ) -> [TaskItem] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let matching = tasks.filter { task in
             let matchesStatus = status == .all || task.isComplete == (status == .completed)
             let matchesSearch = query.isEmpty || task.title.localizedCaseInsensitiveContains(query)
-            return matchesStatus && matchesSearch
+            let matchesPriority = priority == nil || task.priority == priority
+            return matchesStatus && matchesSearch && matchesPriority
         }
 
         switch sort {
@@ -104,6 +129,17 @@ final class TaskViewModel {
                 return $0.priority.sortOrder > $1.priority.sortOrder
             }
         }
+    }
+
+    private func storedTask(withID id: UUID) throws -> TaskItem? {
+        let taskID = id
+        var descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
+    private func validateDueDate(_ dueDate: Date) throws {
+        guard dueDate.timeIntervalSince1970.isFinite else { throw TaskValidationError.invalidDueDate }
     }
 }
 
@@ -129,14 +165,22 @@ private extension TaskPriority {
     }
 }
 
-enum TaskValidationError: LocalizedError {
+enum TaskValidationError: LocalizedError, Equatable {
     case emptyTitle
     case duplicateTitle
+    case invalidDueDate
 
     var errorDescription: String? {
         switch self {
         case .emptyTitle: "Add a title before saving this task."
         case .duplicateTitle: "A task with this title already exists. Choose a different title."
+        case .invalidDueDate: "Choose a valid due date before saving this task."
         }
     }
+}
+
+enum TaskOperationError: LocalizedError, Equatable {
+    case taskNotFound
+
+    var errorDescription: String? { "This task is no longer available. Refresh the list and try again." }
 }

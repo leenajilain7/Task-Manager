@@ -29,8 +29,12 @@ struct TaskComposerView: View {
                 Section("Task") {
                     TextField("Title", text: $title)
                         .textInputAutocapitalization(.sentences)
+                        .accessibilityIdentifier("task.title")
+                        .accessibilityIdentifier("task.title")
                     TextField("Description (optional)", text: $taskDescription, axis: .vertical)
                         .lineLimit(2...4)
+                        .accessibilityIdentifier("task.description")
+                        .accessibilityIdentifier("task.description")
                     Picker("Category", selection: $category) {
                         ForEach(TaskCategory.allCases) { option in Text(option.rawValue).tag(option) }
                     }
@@ -57,6 +61,8 @@ struct TaskComposerView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(task == nil ? "Add" : "Save") { saveTask() }
                         .disabled(!canSave)
+                        .accessibilityIdentifier("task.save")
+                        .accessibilityIdentifier("task.save")
                 }
             }
         }

@@ -12,22 +12,22 @@ struct RootTabView: View {
             NavigationStack {
                 DashboardView()
             }
-            .tabItem { Label("Home", systemImage: "house.fill") }
+            .tabItem { Label("Home", systemImage: "house.fill").accessibilityIdentifier("tab.home") }
 
             NavigationStack {
                 AllTasksView()
             }
-            .tabItem { Label("Tasks", systemImage: "checklist") }
+            .tabItem { Label("Tasks", systemImage: "checklist").accessibilityIdentifier("tab.tasks") }
 
             NavigationStack {
                 StatisticsView()
             }
-            .tabItem { Label("Statistics", systemImage: "chart.bar.fill") }
+            .tabItem { Label("Statistics", systemImage: "chart.bar.fill").accessibilityIdentifier("tab.statistics") }
 
             NavigationStack {
                 SettingsView()
             }
-            .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+            .tabItem { Label("Settings", systemImage: "gearshape.fill").accessibilityIdentifier("tab.settings") }
         }
         .tint(TaskFlowStyle.accent)
         .toolbarBackground(.visible, for: .tabBar)

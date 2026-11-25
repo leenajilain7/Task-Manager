@@ -23,8 +23,9 @@ struct DashboardView: View {
         }
     }
 
-    private var completedCount: Int { tasks.filter(\.isComplete).count }
-    private var pendingCount: Int { tasks.count - completedCount }
+    private var statistics: TaskStatisticsViewModel { TaskStatisticsViewModel(tasks: tasks) }
+    private var completedCount: Int { statistics.completedCount }
+    private var pendingCount: Int { statistics.pendingCount }
     private var todayProgress: Double {
         guard !todayTasks.isEmpty else { return 0 }
         return Double(todayTasks.filter(\.isComplete).count) / Double(todayTasks.count)

@@ -2,6 +2,14 @@ import Foundation
 
 struct TaskStatisticsViewModel {
     let tasks: [TaskItem]
+    private let calendar: Calendar
+    private let referenceDate: Date
+
+    init(tasks: [TaskItem], calendar: Calendar = .current, referenceDate: Date = .now) {
+        self.tasks = tasks
+        self.calendar = calendar
+        self.referenceDate = referenceDate
+    }
 
     var totalCount: Int { tasks.count }
     var completedCount: Int { tasks.filter(\.isComplete).count }
@@ -12,9 +20,8 @@ struct TaskStatisticsViewModel {
     }
 
     var weeklyCompletions: [DailyCompletion] {
-        let calendar = Calendar.current
-        let firstDay = calendar.dateInterval(of: .weekOfYear, for: .now)?.start
-            ?? calendar.startOfDay(for: .now)
+        let firstDay = calendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start
+            ?? calendar.startOfDay(for: referenceDate)
         return (0..<7).compactMap { offset in
             guard let date = calendar.date(byAdding: .day, value: offset, to: firstDay) else { return nil }
             let count = tasks.filter { task in

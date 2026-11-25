@@ -7,12 +7,13 @@ struct AllTasksView: View {
     @State private var searchText = ""
     @State private var status: TaskListStatus = .all
     @State private var sort: TaskSortOption = .dueDate
+    @State private var priorityFilter: TaskPriority?
     @State private var taskForDetails: TaskItem?
     @State private var errorMessage: String?
 
     private var viewModel: TaskViewModel { TaskViewModel(context: modelContext) }
     private var visibleTasks: [TaskItem] {
-        viewModel.filteredTasks(tasks, searchText: searchText, status: status, sort: sort)
+        viewModel.filteredTasks(tasks, searchText: searchText, status: status, sort: sort, priority: priorityFilter)
     }
 
     private var dateGroups: [TaskDateGroup] {
@@ -32,6 +33,7 @@ struct AllTasksView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier("tasks.statusFilter")
                 .listRowBackground(Color.clear)
             }
 
@@ -58,9 +60,17 @@ struct AllTasksView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("All Tasks")
         .searchable(text: $searchText, prompt: "Search task titles")
+        .accessibilityIdentifier("tasks.search")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    Picker("Priority", selection: $priorityFilter) {
+                        Text("All priorities").tag(nil as TaskPriority?)
+                        ForEach(TaskPriority.allCases) { option in
+                            Text(option.rawValue).tag(option as TaskPriority?)
+                        }
+                    }
+                    Divider()
                     Picker("Sort tasks", selection: $sort) {
                         ForEach(TaskSortOption.allCases) { option in
                             Text(option.title).tag(option)
@@ -71,6 +81,7 @@ struct AllTasksView: View {
                         .labelStyle(.iconOnly)
                 }
                 .accessibilityLabel("Sort tasks")
+                .accessibilityIdentifier("tasks.options")
             }
         }
         .sheet(item: $taskForDetails) { task in

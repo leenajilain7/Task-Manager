@@ -25,6 +25,8 @@ struct TaskDetailView: View {
                 Text(task.title)
                     .font(.system(size: 27, weight: .bold, design: .rounded))
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("task.detailTitle")
+                    .accessibilityIdentifier("task.detailTitle")
 
                 detailCard(title: "Description", symbol: "text.alignleft") {
                     Text(task.taskDescription.isEmpty ? "No description provided." : task.taskDescription)
@@ -55,6 +57,8 @@ struct TaskDetailView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(TaskFlowStyle.accent)
+                .accessibilityIdentifier("task.toggleCompletion")
+                .accessibilityIdentifier("task.toggleCompletion")
             }
             .padding(20)
         }
@@ -75,6 +79,8 @@ struct TaskDetailView: View {
                     Image(systemName: "ellipsis.circle")
                 }
                 .accessibilityLabel("Task actions")
+                .accessibilityIdentifier("task.actions")
+                .accessibilityIdentifier("task.actions")
             }
         }
         .sheet(isPresented: $showingEditor) {
@@ -82,6 +88,8 @@ struct TaskDetailView: View {
         }
         .confirmationDialog("Delete this task?", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
             Button("Delete task", role: .destructive, action: deleteTask)
+                .accessibilityIdentifier("task.confirmDelete")
+                .accessibilityIdentifier("task.confirmDelete")
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This task will be removed from TaskFlow.")

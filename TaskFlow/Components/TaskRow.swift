@@ -44,6 +44,8 @@ struct TaskRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Open task details")
+            .accessibilityIdentifier("task.row.\(task.title)")
+            .accessibilityIdentifier("task.row.\(task.title)")
             Spacer(minLength: 4)
             Text(task.dueDate.formatted(.dateTime.hour().minute()))
                 .font(.system(size: 10, weight: .medium, design: .rounded))
