@@ -46,7 +46,7 @@ struct SettingsView: View {
                 }
                 .accessibilityIdentifier("settings.weekStart")
                 Text("This changes the weekly statistics chart. System Default follows your device calendar.")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(TaskFlowStyle.caption).foregroundStyle(.secondary)
             }
 
             Section("Interaction") {
@@ -71,7 +71,7 @@ struct SettingsView: View {
                     .accessibilityIdentifier("settings.notificationStatus")
 
                 Text("TaskFlow uses notifications to alert you at the reminder time you choose.")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(TaskFlowStyle.caption).foregroundStyle(.secondary)
 
                 switch authorization {
                 case .notDetermined:
@@ -79,20 +79,20 @@ struct SettingsView: View {
                         .accessibilityIdentifier("settings.requestNotifications")
                 case .denied:
                     Text("Notifications are off for TaskFlow. You can change this in iOS Settings.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(TaskFlowStyle.caption).foregroundStyle(.secondary)
                     Button("Open Notification Settings", action: openNotificationSettings)
                         .accessibilityIdentifier("settings.openNotificationSettings")
                 case .restricted:
                     Text("Notification access is restricted by this device’s settings.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(TaskFlowStyle.caption).foregroundStyle(.secondary)
                 case .authorized, .provisional, .ephemeral:
                     Label("Task reminders can be delivered.", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 12)).foregroundStyle(.green)
+                        .font(TaskFlowStyle.caption).foregroundStyle(.green)
                 }
 
                 if let schedulingError = notificationService.lastSchedulingError {
                     Text("A reminder could not be scheduled: \(schedulingError)")
-                        .font(.system(size: 12)).foregroundStyle(.red)
+                        .font(TaskFlowStyle.caption).foregroundStyle(.red)
                 }
             }
 
@@ -101,10 +101,10 @@ struct SettingsView: View {
                     Label("TaskFlow", systemImage: "checklist")
                     Spacer()
                     Text("Version \(versionString)")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                        .font(TaskFlowStyle.caption).foregroundStyle(.secondary)
                 }
                 Text("A simple space to plan, focus, and keep track of what matters.")
-                    .font(.system(size: 13)).foregroundStyle(.secondary)
+                    .font(TaskFlowStyle.secondaryText).foregroundStyle(.secondary)
                 LabeledContent("Built with", value: "SwiftUI · SwiftData · Swift Charts")
                 LabeledContent("Developer", value: "Your name here")
             }

@@ -399,6 +399,27 @@ struct TaskStatisticsTests {
 @MainActor
 @Suite("SwiftData persistence")
 struct TaskPersistenceTests {
+    @Test func longTextAndPastDueDatesPersistWithoutTruncation() throws {
+        let store = try InMemoryTaskStore()
+        let title = Array(repeating: "Long task title", count: 80).joined(separator: " ")
+        let description = Array(repeating: "Detailed task notes.", count: 240).joined(separator: " ")
+        let pastDueDate = try isoDate("2020-01-15T09:30:00Z")
+        let task = try TaskViewModel(context: store.context).createTask(
+            title: title,
+            description: description,
+            dueDate: pastDueDate,
+            category: .other,
+            priority: .low
+        )
+        let saved = try store.context.fetch(FetchDescriptor<TaskItem>())
+
+        #expect(saved.count == 1)
+        #expect(saved.first?.title == title)
+        #expect(saved.first?.taskDescription == description)
+        #expect(saved.first?.dueDate == pastDueDate)
+        #expect(task.dueDate < .now)
+    }
+
     @Test func savedTaskCanBeFetchedFromAnotherContext() throws {
         let store = try InMemoryTaskStore()
         let created = try TaskViewModel(context: store.context).createTask(

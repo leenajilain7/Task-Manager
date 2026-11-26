@@ -90,13 +90,6 @@ struct DashboardView: View {
                 Text("Let’s make today count.")
                     .font(TaskFlowStyle.body).foregroundStyle(.secondary)
             }
-            Spacer()
-            Image(systemName: "sparkles")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(TaskFlowStyle.accent)
-                .frame(width: 46, height: 46)
-                .background(TaskFlowStyle.accent.opacity(0.12), in: Circle())
-                .accessibilityHidden(true)
         }
     }
 
@@ -104,7 +97,7 @@ struct DashboardView: View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Today’s focus")
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(.white.opacity(0.78))
+                    .font(TaskFlowStyle.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.78))
                 Text(progressHeadline)
                     .font(.system(.title3, design: .rounded).weight(.bold)).foregroundStyle(.white)
                     .fixedSize(horizontal: false, vertical: true)
@@ -234,7 +227,7 @@ struct DashboardView: View {
                         HStack(spacing: 12) {
                             RoundedRectangle(cornerRadius: 2).fill(task.category.color).frame(width: 3, height: 36)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(task.title).font(TaskFlowStyle.cardTitle).foregroundStyle(.primary).lineLimit(2)
+                                Text(task.title).font(TaskFlowStyle.cardTitle).foregroundStyle(.primary)
                                 Text(task.category.rawValue).font(TaskFlowStyle.caption.weight(.medium)).foregroundStyle(.secondary)
                             }
                             Spacer()

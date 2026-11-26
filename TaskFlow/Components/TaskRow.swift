@@ -34,7 +34,6 @@ struct TaskRow: View {
                         .font(TaskFlowStyle.cardTitle)
                         .foregroundStyle(task.isComplete ? .secondary : .primary)
                         .strikethrough(task.isComplete)
-                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
 
                     ViewThatFits(in: .horizontal) {
@@ -52,7 +51,6 @@ struct TaskRow: View {
                         Text(task.taskDescription)
                             .font(TaskFlowStyle.secondaryText)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
