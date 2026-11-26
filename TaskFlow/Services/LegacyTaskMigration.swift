@@ -14,20 +14,29 @@ enum LegacyTaskMigration {
         }
 
         let legacyTasks = try JSONDecoder().decode([LegacyTask].self, from: data)
-        for legacy in legacyTasks {
-            let category = TaskCategory(rawValue: legacy.category) ?? .other
-            context.insert(TaskItem(
-                title: legacy.title,
-                taskDescription: legacy.notes,
-                dueDate: legacy.dueDate,
-                category: category,
-                isComplete: legacy.isComplete,
-                id: legacy.id
-            ))
+        let existingIDs = Set(try context.fetch(FetchDescriptor<TaskItem>()).map(\.id))
+        var importedIDs = existingIDs
+        do {
+            for legacy in legacyTasks where importedIDs.insert(legacy.id).inserted {
+                let category = TaskCategory(rawValue: legacy.category) ?? .other
+                context.insert(TaskItem(
+                    title: legacy.title,
+                    taskDescription: legacy.notes,
+                    dueDate: legacy.dueDate,
+                    category: category,
+                    isComplete: legacy.isComplete,
+                    id: legacy.id
+                ))
+            }
+            try context.save()
+            // Mark completion only after SwiftData has durably saved the imported records.
+            // Keeping the source payload until afterward makes a launch interruption retryable.
+            defaults.set(true, forKey: completedKey)
+            defaults.removeObject(forKey: tasksKey)
+        } catch {
+            context.rollback()
+            throw error
         }
-        try context.save()
-        defaults.removeObject(forKey: tasksKey)
-        defaults.set(true, forKey: completedKey)
     }
 }
 

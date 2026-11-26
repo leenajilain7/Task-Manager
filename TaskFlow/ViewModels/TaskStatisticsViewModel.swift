@@ -22,19 +22,23 @@ struct TaskStatisticsViewModel {
     var weeklyCompletions: [DailyCompletion] {
         let firstDay = calendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start
             ?? calendar.startOfDay(for: referenceDate)
+        let completionCountsByDay = tasks.reduce(into: [Date: Int]()) { counts, task in
+            guard let completedAt = task.completedAt else { return }
+            let day = calendar.startOfDay(for: completedAt)
+            counts[day, default: 0] += 1
+        }
         return (0..<7).compactMap { offset in
             guard let date = calendar.date(byAdding: .day, value: offset, to: firstDay) else { return nil }
-            let count = tasks.filter { task in
-                guard let completedAt = task.completedAt else { return false }
-                return calendar.isDate(completedAt, inSameDayAs: date)
-            }.count
-            return DailyCompletion(date: date, count: count)
+            return DailyCompletion(date: date, count: completionCountsByDay[calendar.startOfDay(for: date), default: 0])
         }
     }
 
     var categoryDistribution: [CategoryTaskCount] {
-        TaskCategory.allCases.map { category in
-            CategoryTaskCount(category: category, count: tasks.filter { $0.category == category }.count)
+        let countsByCategory = tasks.reduce(into: [TaskCategory: Int]()) { counts, task in
+            counts[task.category, default: 0] += 1
+        }
+        return TaskCategory.allCases.map { category in
+            CategoryTaskCount(category: category, count: countsByCategory[category, default: 0])
         }
     }
 }

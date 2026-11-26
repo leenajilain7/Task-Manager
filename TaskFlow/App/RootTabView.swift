@@ -1,7 +1,10 @@
 import SwiftUI
+import SwiftData
 
 struct RootTabView: View {
     @AppStorage(TaskFlowPreferences.appearanceKey) private var appearanceValue = AppAppearance.system.rawValue
+    @Environment(NotificationService.self) private var notificationService
+    @Query private var tasks: [TaskItem]
 
     private var appearance: AppAppearance {
         AppAppearance(rawValue: appearanceValue) ?? .system
@@ -33,6 +36,9 @@ struct RootTabView: View {
         .toolbarBackground(TaskFlowStyle.surface, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
         .preferredColorScheme(appearance.colorScheme)
+        .task {
+            await TaskReminderCoordinator(service: notificationService).rescheduleAll(tasks)
+        }
     }
 }
 

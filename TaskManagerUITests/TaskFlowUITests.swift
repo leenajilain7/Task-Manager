@@ -90,7 +90,9 @@ final class TaskFlowUITests: XCTestCase {
         let confirmDelete = app.buttons["task.confirmDelete"].firstMatch
         XCTAssertTrue(confirmDelete.waitForExistence(timeout: 5))
         confirmDelete.tap()
-        XCTAssertFalse(app.buttons["task.row.\(title)"].waitForExistence(timeout: 2))
+        let deletedRow = app.buttons["task.row.\(title)"]
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: deletedRow)
+        waitForExpectations(timeout: 5)
     }
 
     func testReminderCanBeEnabledAndAppearsInTaskDetails() {

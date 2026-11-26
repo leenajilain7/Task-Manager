@@ -31,6 +31,43 @@ private func utcCalendar() -> Calendar {
     return calendar
 }
 
+private enum TaskItemBeforeReminderSchema {
+    @Model
+    final class TaskItem {
+        @Attribute(.unique) var id: UUID
+        var title: String
+        var taskDescription: String
+        var dueDate: Date
+        var categoryValue: String
+        var priorityValue: String
+        var isComplete: Bool
+        var completedAt: Date?
+        var createdAt: Date
+
+        init(
+            id: UUID,
+            title: String,
+            taskDescription: String,
+            dueDate: Date,
+            categoryValue: String,
+            priorityValue: String,
+            isComplete: Bool,
+            completedAt: Date?,
+            createdAt: Date
+        ) {
+            self.id = id
+            self.title = title
+            self.taskDescription = taskDescription
+            self.dueDate = dueDate
+            self.categoryValue = categoryValue
+            self.priorityValue = priorityValue
+            self.isComplete = isComplete
+            self.completedAt = completedAt
+            self.createdAt = createdAt
+        }
+    }
+}
+
 @Suite("TaskFlow preferences")
 struct TaskFlowPreferencesTests {
     private func isolatedDefaults() -> UserDefaults {
@@ -256,6 +293,38 @@ struct TaskViewModelTests {
             try model.updateTask(task, title: "Changed", description: "", dueDate: .now, category: .personal, priority: .low)
         }
     }
+
+    @Test func equalSortKeysUseDeterministicTitleOrder() throws {
+        let date = try isoDate("2026-12-03T10:00:00Z")
+        let beta = TaskItem(title: "Beta", dueDate: date, priority: .high)
+        let alpha = TaskItem(title: "Alpha", dueDate: date, priority: .high)
+        let model = TaskViewModel(context: try InMemoryTaskStore().context)
+
+        #expect(model.filteredTasks([beta, alpha], searchText: "", status: .all, sort: .dueDate).map(\.title) == ["Alpha", "Beta"])
+        #expect(model.filteredTasks([beta, alpha], searchText: "", status: .all, sort: .priority).map(\.title) == ["Alpha", "Beta"])
+    }
+
+    @Test func searchAndStatisticsHandleLargeTaskCollections() throws {
+        let tasks = (0..<1_200).map { index in
+            TaskItem(
+                title: index.isMultiple(of: 3) ? "Review milestone \(index)" : "Task \(index)",
+                category: index.isMultiple(of: 2) ? .work : .study,
+                priority: index.isMultiple(of: 5) ? .high : .low,
+                isComplete: index.isMultiple(of: 4),
+                completedAt: index.isMultiple(of: 4) ? Date.now : nil
+            )
+        }
+        let model = TaskViewModel(context: try InMemoryTaskStore().context)
+        let matches = model.filteredTasks(tasks, searchText: "MILESTONE", status: .all, sort: .dueDate)
+        let stats = TaskStatisticsViewModel(tasks: tasks, calendar: utcCalendar())
+
+        #expect(matches.count == 400)
+        #expect(matches.allSatisfy { $0.title.localizedCaseInsensitiveContains("milestone") })
+        #expect(stats.totalCount == 1_200)
+        #expect(stats.completedCount == 300)
+        #expect(stats.pendingCount == 900)
+        #expect(stats.categoryDistribution.reduce(0) { $0 + $1.count } == 1_200)
+    }
 }
 
 @MainActor
@@ -384,6 +453,73 @@ struct TaskPersistenceTests {
 
         #expect(saved.first?.id == task.id)
         #expect(saved.first?.reminderDate == reminder)
+    }
+}
+
+@MainActor
+@Suite("SwiftData schema migration")
+struct TaskSchemaMigrationTests {
+    @Test func existingOnDiskTasksGainAnEmptyReminderWithoutLosingValues() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TaskFlowMigration-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let storeURL = directory.appendingPathComponent("Tasks.store")
+        let taskID = UUID()
+        let dueDate = try isoDate("2026-12-04T09:30:00Z")
+        let completionDate = try isoDate("2026-11-24T15:45:00Z")
+        let createdDate = try isoDate("2026-11-20T08:00:00Z")
+
+        do {
+            let oldSchema = Schema([TaskItemBeforeReminderSchema.TaskItem.self])
+            let oldConfiguration = ModelConfiguration("BeforeReminder", schema: oldSchema, url: storeURL)
+            let oldContainer = try ModelContainer(for: oldSchema, configurations: oldConfiguration)
+            let oldContext = ModelContext(oldContainer)
+            oldContext.insert(TaskItemBeforeReminderSchema.TaskItem(
+                id: taskID,
+                title: "Existing completed task",
+                taskDescription: "Keep this note",
+                dueDate: dueDate,
+                categoryValue: TaskCategory.work.rawValue,
+                priorityValue: TaskPriority.high.rawValue,
+                isComplete: true,
+                completedAt: completionDate,
+                createdAt: createdDate
+            ))
+            oldContext.insert(TaskItemBeforeReminderSchema.TaskItem(
+                id: UUID(),
+                title: "Existing pending task",
+                taskDescription: "",
+                dueDate: dueDate,
+                categoryValue: TaskCategory.study.rawValue,
+                priorityValue: TaskPriority.low.rawValue,
+                isComplete: false,
+                completedAt: nil,
+                createdAt: createdDate
+            ))
+            try oldContext.save()
+        }
+
+        let currentConfiguration = ModelConfiguration("Current", url: storeURL, cloudKitDatabase: .none)
+        let currentContainer = try ModelContainer(for: TaskItem.self, configurations: currentConfiguration)
+        let migratedTasks = try ModelContext(currentContainer).fetch(FetchDescriptor<TaskItem>())
+
+        #expect(migratedTasks.count == 2)
+        let completed = try #require(migratedTasks.first { $0.id == taskID })
+        #expect(completed.title == "Existing completed task")
+        #expect(completed.taskDescription == "Keep this note")
+        #expect(completed.dueDate == dueDate)
+        #expect(completed.category == .work)
+        #expect(completed.priority == .high)
+        #expect(completed.isComplete)
+        #expect(completed.completedAt == completionDate)
+        #expect(completed.createdAt == createdDate)
+        #expect(completed.reminderDate == nil)
+        let pending = try #require(migratedTasks.first { $0.title == "Existing pending task" })
+        #expect(!pending.isComplete)
+        #expect(pending.category == .study)
+        #expect(pending.priority == .low)
+        #expect(pending.reminderDate == nil)
     }
 }
 

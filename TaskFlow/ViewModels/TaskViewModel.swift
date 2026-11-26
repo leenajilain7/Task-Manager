@@ -129,13 +129,25 @@ final class TaskViewModel {
 
         switch sort {
         case .dueDate:
-            return matching.sorted { $0.dueDate < $1.dueDate }
+            return matching.sorted { left, right in
+                if left.dueDate != right.dueDate { return left.dueDate < right.dueDate }
+                return stableTitleOrder(left, right)
+            }
         case .priority:
-            return matching.sorted {
-                if $0.priority.sortOrder == $1.priority.sortOrder { return $0.dueDate < $1.dueDate }
-                return $0.priority.sortOrder > $1.priority.sortOrder
+            return matching.sorted { left, right in
+                if left.priority.sortOrder != right.priority.sortOrder {
+                    return left.priority.sortOrder > right.priority.sortOrder
+                }
+                if left.dueDate != right.dueDate { return left.dueDate < right.dueDate }
+                return stableTitleOrder(left, right)
             }
         }
+    }
+
+    private func stableTitleOrder(_ left: TaskItem, _ right: TaskItem) -> Bool {
+        let titleOrder = left.title.localizedCaseInsensitiveCompare(right.title)
+        if titleOrder != .orderedSame { return titleOrder == .orderedAscending }
+        return left.id.uuidString < right.id.uuidString
     }
 
     private func storedTask(withID id: UUID) throws -> TaskItem? {

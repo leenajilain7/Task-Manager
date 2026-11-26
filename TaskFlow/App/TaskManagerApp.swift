@@ -7,6 +7,7 @@ struct TaskManagerApp: App {
     private let container: ModelContainer?
     private let startupError: String?
     private let notificationService = NotificationService()
+    @State private var migrationError: String?
 
     init() {
         let isUITesting = ProcessInfo.processInfo.arguments.contains("-ui-testing")
@@ -31,8 +32,16 @@ struct TaskManagerApp: App {
                             do {
                                 try LegacyTaskMigration.migrateIfNeeded(in: container.mainContext)
                             } catch {
-                                print("Unable to import older tasks: \(error.localizedDescription)")
+                                migrationError = error.localizedDescription
                             }
+                        }
+                        .alert("Couldn’t import older tasks", isPresented: Binding(
+                            get: { migrationError != nil },
+                            set: { if !$0 { migrationError = nil } }
+                        )) {
+                            Button("OK", role: .cancel) { migrationError = nil }
+                        } message: {
+                            Text(migrationError ?? "Please restart TaskFlow and try again.")
                         }
                 } else {
                     ContentUnavailableView(
