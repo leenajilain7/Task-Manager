@@ -106,7 +106,7 @@ struct SettingsView: View {
                 Text("A simple space to plan, focus, and keep track of what matters.")
                     .font(TaskFlowStyle.secondaryText).foregroundStyle(.secondary)
                 LabeledContent("Built with", value: "SwiftUI · SwiftData · Swift Charts")
-                LabeledContent("Developer", value: "Your name here")
+                LabeledContent("Developer", value: "Leena Jilain")
             }
         }
         .navigationTitle("Settings")

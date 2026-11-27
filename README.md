@@ -16,22 +16,16 @@ TaskFlow is a native iOS task manager built with Swift and SwiftUI. It helps peo
 
 ## Screenshots
 
-Screenshots are not included yet. Capture them from the running app in an iOS Simulator and add the image files under `Screenshots/`. Use the actual TaskFlow app screens; do not use mockups in place of product screenshots.
+These are real iPhone 17 Pro Simulator captures supplied for the project.
 
-Suggested captures:
+| Screen | Light Mode | Dark Mode |
+|---|---|---|
+| Home dashboard | ![TaskFlow Home dashboard in Light Mode](Screenshots/home-light.png) | ![TaskFlow Home dashboard in Dark Mode](Screenshots/home-dark.png) |
+| All Tasks | ![TaskFlow All Tasks in Light Mode](Screenshots/tasks-light.png) | ![TaskFlow All Tasks in Dark Mode](Screenshots/tasks-dark.png) |
+| Statistics | ![TaskFlow Statistics in Light Mode](Screenshots/statistics-light.png) | ![TaskFlow Statistics in Dark Mode](Screenshots/statistics-dark.png) |
+| Settings | ![TaskFlow Settings in Light Mode](Screenshots/settings-light.png) | ![TaskFlow Settings in Dark Mode](Screenshots/settings-dark.png) |
 
-| Image | Screen |
-|---|---|
-| `home-light.png` | Home dashboard in Light Mode |
-| `tasks-light.png` | All Tasks with sample tasks |
-| `add-task.png` | New Task form |
-| `task-details.png` | Task details with category, priority, due date, and status |
-| `statistics.png` | Statistics with sample data |
-| `settings-light.png` | Settings |
-| `home-dark.png` | Home dashboard in Dark Mode |
-| `statistics-dark.png` | Statistics in Dark Mode |
-
-When screenshots are captured, embed them here with relative Markdown links, for example `![TaskFlow dashboard](Screenshots/home-light.png)`. Use only disposable simulator data for portfolio screenshots.
+The New Task form is also captured in [Light Mode](Screenshots/add-task-light.png). A clean Task Details screenshot has not been supplied yet. The simulator captures show sample local tasks; replace them with fresh captures if you later change the interface.
 
 ## Technology
 
